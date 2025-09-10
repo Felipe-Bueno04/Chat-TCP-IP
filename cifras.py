@@ -250,7 +250,7 @@ def vigenere_descriptografar(texto, chave):
     return resultado
 
 
-# ---------------- RC4 ---------------- #
+
 def rc4_criptografar(texto, chave):
     # Key-Scheduling Algorithm (KSA)
     S = list(range(256))
@@ -270,13 +270,13 @@ def rc4_criptografar(texto, chave):
         K = S[(S[i] + S[j]) % 256]
         resultado.append(char ^ K)
 
-    # Retorna em hexadecimal para facilitar leitura
-    return resultado.hex() if isinstance(resultado, bytes) else ''.join(f'{b:02x}' for b in resultado)
+    # Retorna como string de números decimais separados por espaço
+    return " ".join(str(b) for b in resultado)
 
 
-def rc4_descriptografar(hex_texto, chave):
-    # Converte de hexadecimal para bytes
-    texto_bytes = bytes.fromhex(hex_texto)
+def rc4_descriptografar(decimal_texto, chave):
+    # Converte de string decimal para lista de bytes
+    texto_bytes = [int(x) for x in decimal_texto.split()]
 
     # Key-Scheduling Algorithm (KSA)
     S = list(range(256))
@@ -297,4 +297,3 @@ def rc4_descriptografar(hex_texto, chave):
         resultado.append(char ^ K)
 
     return bytes(resultado).decode("utf-8", errors="ignore")
-
