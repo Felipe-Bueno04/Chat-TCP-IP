@@ -3,16 +3,16 @@ import threading
 import cifras
 import hashlib
 
-HOST = '192.168.137.1'  # Endereço IP do servidor
+HOST = '10.164.20.82'  # Endereço IP do servidor
 PORT = 12345  # Porta do servidor
 USER = "Maomao"  # Nome de usuário
 
-# --- Escolha da cifra ---
 print("Escolha a cifra:")
 print("1 - César")
 print("2 - Substituição Monoalfabética")
 print("3 - Playfair")
 print("4 - Vigenère")
+print("5 - RC4")  # <<---- nova opção
 opcao = input("Opção: ")
 
 chave = input("Digite a chave secreta: ")
@@ -31,6 +31,9 @@ elif opcao == '3':
 elif opcao == '4':
     criptografar = lambda msg: cifras.vigenere_criptografar(msg, chave)
     descriptografar = lambda msg: cifras.vigenere_descriptografar(msg, chave)
+elif opcao == '5':
+    criptografar = lambda msg: cifras.rc4_criptografar(msg, chave)
+    descriptografar = lambda msg: cifras.rc4_descriptografar(msg, chave)
 else:
     print("Opção inválida. Usando César com chave 3.")
     criptografar = lambda msg: cifras.cifra_cesar_criptografar(msg, 3)

@@ -249,3 +249,52 @@ def vigenere_descriptografar(texto, chave):
             resultado += char
     return resultado
 
+
+
+def rc4_criptografar(texto, chave):
+    # Key-Scheduling Algorithm (KSA)
+    S = list(range(256))
+    j = 0
+    chave_bytes = [ord(c) for c in chave]
+    for i in range(256):
+        j = (j + S[i] + chave_bytes[i % len(chave_bytes)]) % 256
+        S[i], S[j] = S[j], S[i]
+
+    # Pseudo-Random Generation Algorithm (PRGA)
+    i = j = 0
+    resultado = []
+    for char in texto.encode("utf-8"):
+        i = (i + 1) % 256
+        j = (j + S[i]) % 256
+        S[i], S[j] = S[j], S[i]
+        K = S[(S[i] + S[j]) % 256]
+        resultado.append(char ^ K)
+
+    # Retorna em hexadecimal para facilitar leitura
+    return resultado.hex() if isinstance(resultado, bytes) else ''.join(f'{b:02x}' for b in resultado)
+
+
+def rc4_descriptografar(hex_texto, chave):
+    # Converte de hexadecimal para bytes
+    texto_bytes = bytes.fromhex(hex_texto)
+
+    # Key-Scheduling Algorithm (KSA)
+    S = list(range(256))
+    j = 0
+    chave_bytes = [ord(c) for c in chave]
+    for i in range(256):
+        j = (j + S[i] + chave_bytes[i % len(chave_bytes)]) % 256
+        S[i], S[j] = S[j], S[i]
+
+    # Pseudo-Random Generation Algorithm (PRGA)
+    i = j = 0
+    resultado = []
+    for char in texto_bytes:
+        i = (i + 1) % 256
+        j = (j + S[i]) % 256
+        S[i], S[j] = S[j], S[i]
+        K = S[(S[i] + S[j]) % 256]
+        resultado.append(char ^ K)
+
+    return bytes(resultado).decode("utf-8", errors="ignore")
+
