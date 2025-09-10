@@ -66,87 +66,105 @@ def substituicao_monoalfabetica_descriptografar(texto, chave):
 
 
 # ---------------- PLAYFAIR ---------------- #
-import unicodedata
+import unicodedata # Biblioteca usada para normalizar strings e remover acentos
 
-def _normalize_text(text):
-    # Remove acentos e converte em maiúsculas, substitui J -> I
+def _normalize_text(text): # Função que normaliza o texto:
+    
+    # - Remove acentos
+    # - Deixa todas as letras maiúsculas
+    # - Substitui J por I (regra da cifra Playfair)
     normalized = unicodedata.normalize('NFD', text)
     filtered = ''.join(c for c in normalized if c.isalpha())
     return filtered.upper().replace('J', 'I')
 
-def _generate_key_matrix(key):
-    key = _normalize_text(key)
-    seen = set()
-    seq = []
+def _generate_key_matrix(key): # Gera a matriz 5x5 usada na cifra Playfair a partir da chave
+
+    key = _normalize_text(key) # Normaliza a chave
+    seen = set() # Conjunto para evitar letras repetidas
+    seq = [] # Lista com a sequência de letras da matriz
+
+    # Adiciona letras da chave sem repetição
     for ch in key:
         if ch not in seen:
             seen.add(ch)
             seq.append(ch)
-    for ch in "ABCDEFGHIKLMNOPQRSTUVWXYZ":  # J omitido
+
+    # Completa a matriz com as demais letras do alfabeto (sem J)
+    for ch in "ABCDEFGHIKLMNOPQRSTUVWXYZ":
         if ch not in seen:
             seen.add(ch)
             seq.append(ch)
+
+    # Cria a matriz 5x5
     matrix = [seq[i*5:(i+1)*5] for i in range(5)]
+
+    # Dicionário que guarda a posição (linha, coluna) de cada letra
     positions = {matrix[r][c]: (r, c) for r in range(5) for c in range(5)}
     return matrix, positions
 
 def playfair_criptografar(text, key):
     """
-    Criptografa preservando caracteres não-alfabéticos.
-    Letras são normalizadas (acentos removidos, J->I) e criptografadas em digráfos.
-    Não-alfabéticos (espaços, pontuação) são mantidos na saída.
+    Criptografa o texto com a cifra Playfair.
+    - Mantém espaços e pontuação
+    - Forma pares de letras (digráfos), inserindo 'X' se necessário
     """
-    matrix, pos = _generate_key_matrix(key)
-    out = []
+    matrix, pos = _generate_key_matrix(key) # Gera matriz a partir da chave
+    out = [] # Lista que guardará o texto cifrado
     i = 0
     n = len(text)
+
     while i < n:
+        # Se o caractere não for letra, apenas mantém
         if not text[i].isalpha():
             out.append(text[i])
             i += 1
             continue
 
-        # coletar bloco contínuo de letras (preserva limites por espaços/pontuação)
+        # Agrupa sequência de letras (ignora pontuação)
         j = i
         while j < n and text[j].isalpha():
             j += 1
-        block = text[i:j]               # bloco com possíveis acentos/maiúsculas/minúsculas
-        norm = _normalize_text(block)   # normaliza para A-Z (J->I)
-        # construir digráfos com 'X' quando necessário
+        block = text[i:j]               # Bloco original
+        norm = _normalize_text(block)   # Normaliza bloco para A-Z
+        
+        # Monta os pares de letras (digráfos)
         k = 0
         digraphs = []
         while k < len(norm):
             a = norm[k]
             if k + 1 < len(norm):
                 b = norm[k+1]
-                if a == b:
+                if a == b: # Caso de letras iguais → insere 'X'
                     digraphs.append(a + 'X')
                     k += 1
                 else:
-                    digraphs.append(a + b)
+                    digraphs.append(a + b) # Caso de letras diferentes
                     k += 2
             else:
-                digraphs.append(a + 'X')
+                digraphs.append(a + 'X') # Última letra sem par → adiciona 'X'
                 k += 1
 
-        # criptografa os digráfos e adiciona (sem inserir espaços)
+        # Aplica as regras da cifra Playfair em cada par
         for dg in digraphs:
             a, b = dg[0], dg[1]
-            ra, ca = pos[a]
-            rb, cb = pos[b]
-            if ra == rb:
+            ra, ca = pos[a] # Posição da letra A
+            rb, cb = pos[b] # Posição da letra B
+
+            if ra == rb: # Mesma linha → pega a letra à direita
                 out.append(matrix[ra][(ca+1) % 5])
                 out.append(matrix[rb][(cb+1) % 5])
-            elif ca == cb:
+
+            elif ca == cb: # Mesma coluna → pega a letra abaixo
                 out.append(matrix[(ra+1) % 5][ca])
                 out.append(matrix[(rb+1) % 5][cb])
-            else:
+
+            else: # Retângulo → troca as colunas
                 out.append(matrix[ra][cb])
                 out.append(matrix[rb][ca])
 
-        i = j  # pula para depois do bloco de letras
+        i = j  # Avança para o próximo bloco
 
-    return ''.join(out)
+    return ''.join(out) # Retorna o texto cifrado
 
 
 def playfair_descriptografar(cipher_text, key):
@@ -155,17 +173,17 @@ def playfair_descriptografar(cipher_text, key):
     Espera que os blocos de letras venham como pares contínuos (sem espaços),
     e que não-alfabéticos estejam no lugar original (ex.: espaços).
     """
-    matrix, pos = _generate_key_matrix(key)
+    matrix, pos = _generate_key_matrix(key) # Gera matriz da chave
     out = []
     i = 0
     n = len(cipher_text)
     while i < n:
-        if not cipher_text[i].isalpha():
-            out.append(cipher_text[i])
+        if not cipher_text[i].isalpha(): 
+            out.append(cipher_text[i]) # Mantém espaços/pontuação
             i += 1
             continue
 
-        # coletar bloco contínuo de letras cifradas
+        # Agrupa letras cifradas
         j = i
         while j < n and cipher_text[j].isalpha():
             j += 1
@@ -177,20 +195,23 @@ def playfair_descriptografar(cipher_text, key):
             b = block[k+1]
             ra, ca = pos[a]
             rb, cb = pos[b]
-            if ra == rb:
+            
+            if ra == rb: # Mesma linha → pega a letra à esquerda
                 out.append(matrix[ra][(ca-1) % 5])
                 out.append(matrix[rb][(cb-1) % 5])
-            elif ca == cb:
+
+            elif ca == cb: # Mesma coluna → pega a letra acima
                 out.append(matrix[(ra-1) % 5][ca])
                 out.append(matrix[(rb-1) % 5][cb])
-            else:
+
+            else: # Retângulo → troca as colunas
                 out.append(matrix[ra][cb])
                 out.append(matrix[rb][ca])
             k += 2
 
         i = j
 
-    return ''.join(out)
+    return ''.join(out) # Retorna o texto descriptografado
 
 
 # ---------------- VIGENERE ---------------- #
