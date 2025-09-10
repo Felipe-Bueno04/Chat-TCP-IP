@@ -97,6 +97,8 @@ def _generate_key_matrix(key): # Gera a matriz 5x5 usada na cifra Playfair a par
 
     # Cria a matriz 5x5
     matrix = [seq[i*5:(i+1)*5] for i in range(5)]
+    for row in matrix:
+        print(row)
 
     # Dicionário que guarda a posição (linha, coluna) de cada letra
     positions = {matrix[r][c]: (r, c) for r in range(5) for c in range(5)}
@@ -164,7 +166,10 @@ def playfair_criptografar(text, key):
 
         i = j  # Avança para o próximo bloco
 
-    return ''.join(out) # Retorna o texto cifrado
+    # Quebra a string em pares de 2 e junta com espaço
+    cipher_text = ''.join(out)
+    pairs = [cipher_text[i:i+2] for i in range(0, len(cipher_text), 2)]
+    return ' '.join(pairs)
 
 
 def playfair_descriptografar(cipher_text, key):
