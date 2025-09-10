@@ -250,7 +250,7 @@ def vigenere_descriptografar(texto, chave):
     return resultado
 
 
-
+# ---------------- RC4 ---------------- #
 def rc4_criptografar(texto, chave):
     # Key-Scheduling Algorithm (KSA)
     S = list(range(256))
