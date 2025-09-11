@@ -75,6 +75,7 @@ def _normalize_text(text): # Função que normaliza o texto:
     # - Substitui J por I (regra da cifra Playfair)
     normalized = unicodedata.normalize('NFD', text)
     filtered = ''.join(c for c in normalized if c.isalpha())
+    print(filtered.upper().replace('J', 'I'))
     return filtered.upper().replace('J', 'I')
 
 def _generate_key_matrix(key): # Gera a matriz 5x5 usada na cifra Playfair a partir da chave
@@ -104,6 +105,25 @@ def _generate_key_matrix(key): # Gera a matriz 5x5 usada na cifra Playfair a par
     positions = {matrix[r][c]: (r, c) for r in range(5) for c in range(5)}
     return matrix, positions
 
+def _make_digraphs(norm):
+    digraphs = []
+    i = 0
+    while i < len(norm):
+        a = norm[i]
+        if i + 1 < len(norm):
+            b = norm[i+1]
+            if a == b:  # Letras iguais → insere 'X' depois da primeira
+                digraphs.append(a + 'X')
+                i += 1
+            else:
+                digraphs.append(a + b)
+                i += 2
+        else:
+            # Última letra sozinha → adiciona X
+            digraphs.append(a + 'X')
+            i += 1
+    return digraphs
+
 def playfair_criptografar(text, key):
     """
     Criptografa o texto com a cifra Playfair.
@@ -126,25 +146,12 @@ def playfair_criptografar(text, key):
         j = i
         while j < n and text[j].isalpha():
             j += 1
+        
         block = text[i:j]               # Bloco original
         norm = _normalize_text(block)   # Normaliza bloco para A-Z
         
         # Monta os pares de letras (digráfos)
-        k = 0
-        digraphs = []
-        while k < len(norm):
-            a = norm[k]
-            if k + 1 < len(norm):
-                b = norm[k+1]
-                if a == b: # Caso de letras iguais → insere 'X'
-                    digraphs.append(a + 'X')
-                    k += 1
-                else:
-                    digraphs.append(a + b) # Caso de letras diferentes
-                    k += 2
-            else:
-                digraphs.append(a + 'X') # Última letra sem par → adiciona 'X'
-                k += 1
+        digraphs = _make_digraphs(norm)
 
         # Aplica as regras da cifra Playfair em cada par
         for dg in digraphs:
@@ -169,7 +176,7 @@ def playfair_criptografar(text, key):
     # Quebra a string em pares de 2 e junta com espaço
     cipher_text = ''.join(out)
     pairs = [cipher_text[i:i+2] for i in range(0, len(cipher_text), 2)]
-    return ' '.join(pairs)
+    return ''.join(pairs)
 
 
 def playfair_descriptografar(cipher_text, key):
