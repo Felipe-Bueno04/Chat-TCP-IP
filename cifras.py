@@ -447,7 +447,6 @@ def texto_para_bits(texto):
     """Converte texto para string de bits"""
     bits = ''
     for char in texto:
-        # Converte cada caractere para 8 bits
         bits += format(ord(char), '08b')
     return bits
 
@@ -518,17 +517,15 @@ def gerar_subchaves(chave_64bits):
     # Permutação PC1
     chave_56bits = permutar(chave_64bits, PC1)
     
-    C = chave_56bits[:28]  # Metade esquerda
-    D = chave_56bits[28:]  # Metade direita
+    C = chave_56bits[:28]
+    D = chave_56bits[28:]
     
     subchaves = []
     
     for rodada in range(16):
-        # Deslocamento circular
         C = left_shift(C, SHIFTS[rodada])
         D = left_shift(D, SHIFTS[rodada])
         
-        # Combina e aplica PC2
         chave_56_shifted = C + D
         subchave = permutar(chave_56_shifted, PC2)
         subchaves.append(subchave)
@@ -538,7 +535,6 @@ def gerar_subchaves(chave_64bits):
 # ---------------- Processamento de bloco ---------------- #
 def processar_bloco_des(bloco_64bits, subchaves, modo='criptografar'):
     """Processa um bloco de 64 bits no DES"""
-
     # Permutação inicial
     bloco = permutar(bloco_64bits, IP)
     
@@ -550,21 +546,26 @@ def processar_bloco_des(bloco_64bits, subchaves, modo='criptografar'):
         for i in range(16):
             L_novo = R
             R_novo = xor(L, funcao_f(R, subchaves[i]))
-
-            # Mostra detalhes apenas da 1ª rodada
+            
+            # Debug da 1ª rodada
             if i == 0:
                 print(f"\n=== RODADA {i+1} ===")
-                print(f"Subchave K{i+1}: {subchaves[i]}")
-                print(f"Entrada R{i}: {R}")
-                print(f"Saída da função F: {funcao_f(R, subchaves[i])}")
                 print(f"L{i}: {L}")
-                print(f"R{i+1} = L{i} XOR F(R{i}, K{i+1}): {R_novo}")
+                print(f"R{i}: {R}")
+                print(f"K{i+1}: {subchaves[i]}")
+                f_result = funcao_f(R, subchaves[i])
+                print(f"F(R{i}, K{i+1}): {f_result}")
+                print(f"L{i} XOR F(R{i}, K{i+1}): {R_novo}")
                 print(f"L{i+1} = R{i}: {L_novo}")
-
+                print(f"R{i+1} = L{i} XOR F(R{i}, K{i+1}): {R_novo}")
+            
             L, R = L_novo, R_novo
-
+            
             if i == 0:
-                print(f"Estado após rodada {i+1}: L={L}, R={R}")
+                print(f"Estado após rodada {i+1}:")
+                print(f"L{i+1}: {L}")
+                print(f"R{i+1}: {R}")
+    
     else:
         # 16 rodadas inversas para descriptografia
         for i in range(15, -1, -1):
@@ -578,9 +579,10 @@ def processar_bloco_des(bloco_64bits, subchaves, modo='criptografar'):
     # Permutação final
     return permutar(bloco_final, FP)
 
+# ---------------- Interface principal ---------------- #
 def des_criptografar(texto, chave):
-    """Criptografa texto usando DES"""
-    # Prepara a chave (usa os primeiros 8 caracteres, completa com zeros se necessário)
+    """Criptografa texto usando DES - compatível com código do amigo"""
+    # Prepara a chave (8 caracteres = 64 bits)
     chave_completa = chave.ljust(8, '\0')[:8]
     chave_bits = texto_para_bits(chave_completa)
     
@@ -600,7 +602,7 @@ def des_criptografar(texto, chave):
         bloco_criptografado = processar_bloco_des(bloco, subchaves, 'criptografar')
         texto_criptografado_bits += bloco_criptografado
     
-    # Converte bits para hexadecimal para facilitar transmissão
+    # Converte bits para hexadecimal
     texto_hex = ''
     for i in range(0, len(texto_criptografado_bits), 8):
         byte = texto_criptografado_bits[i:i+8]
@@ -637,3 +639,8 @@ def des_descriptografar(texto_criptografado, chave):
     
     # Remove padding
     return remover_padding(texto_original)
+
+# Aliases para compatibilidade com código do amigo
+def des_decifrar(texto_criptografado, chave):
+    """Alias para des_descriptografar - compatível com código do amigo"""
+    return des_descriptografar(texto_criptografado, chave)
