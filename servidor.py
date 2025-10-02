@@ -2,7 +2,7 @@ import socket      # Biblioteca para comunicação em rede
 import threading   # Permite lidar com vários clientes ao mesmo tempo
 
 # Configurações do servidor
-HOST = '192.168.137.1'  # Endereço IP do servidor
+HOST = '172.18.192.1'  # Endereço IP do servidor
 PORT = 12345            # Porta do servidor que escuta
 clients = []            # Lista com todos os clientes conectados
 salas = {}              # Dicionário que guarda as salas (agrupadas por chave secreta)
@@ -15,7 +15,7 @@ def handle_client(conn, addr):
     chave_hash = None  # Armazena a chave secreta do cliente
 
     while True:
-        try:
+        try:    
             message = conn.recv(1024).decode('utf-8') # Recebe mensagem
             if not message:
                 break
