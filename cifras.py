@@ -485,15 +485,9 @@ def adicionar_padding(texto):
     padding = '\0' * padding_len  # Zeros
     padded_text = texto + padding
     
-    print(f"Padding: texto original tem {len(texto)} chars")
-    if padding_len > 0:
-        print(f"Adicionando {padding_len} bytes de ZEROS como padding")
-    
     # Mostra em hexadecimal
     hex_original = ''.join([format(ord(c), '02X') for c in texto])
     hex_padded = ''.join([format(ord(c), '02X') for c in padded_text])
-    print(f"Texto original (hex): {hex_original}")
-    print(f"Texto com padding (hex): {hex_padded}")
     
     return padded_text
 
@@ -515,12 +509,6 @@ def funcao_f(R, K):
     
     # Debug detalhado
     debug_detalhado = False
-    if debug_detalhado:
-        print(f"\n--- DEBUG FUNÇÃO F ---")
-        print(f"R (entrada): {R}")
-        print(f"E(R): {R_expandido}")
-        print(f"K: {K}")
-        print(f"E(R) XOR K: {xor_result}")
     
     # Aplica S-Boxes
     sbox_saida = ''
@@ -533,17 +521,8 @@ def funcao_f(R, K):
         sbox_saida += format(valor_sbox, '04b')
         sbox_debug.append((i, bloco_6bits, linha, coluna, valor_sbox))
     
-    if debug_detalhado:
-        print(f"Saída S-boxes: {sbox_saida}")
-        for box in sbox_debug:
-            print(f"S-box {box[0]}: entrada={box[1]}, linha={box[2]}, coluna={box[3]}, valor={box[4]:04b}")
-    
     # Permutação final
     resultado = permutar(sbox_saida, P)
-    
-    if debug_detalhado:
-        print(f"Resultado após permutação P: {resultado}")
-        print(f"--- FIM DEBUG FUNÇÃO F ---\n")
     
     return resultado
 
@@ -558,12 +537,6 @@ def gerar_subchaves(chave_64bits):
     
     subchaves = []
     
-    print(f"\n=== GERAÇÃO DE SUBCHAVES ===")
-    print(f"Chave original (64 bits): {chave_64bits}")
-    print(f"Após PC1 (56 bits): {chave_56bits}")
-    print(f"C0: {C}")
-    print(f"D0: {D}")
-    
     for rodada in range(16):
         # Deslocamento circular
         C = left_shift(C, SHIFTS[rodada])
@@ -574,48 +547,10 @@ def gerar_subchaves(chave_64bits):
         subchave = permutar(chave_56_shifted, PC2)
         subchaves.append(subchave)
         
-        # Print de cada subchave
-        print(f"\nRodada {rodada + 1}:")
-        print(f"  Shifts: {SHIFTS[rodada]}")
-        print(f"  C{rodada + 1}: {C}")
-        print(f"  D{rodada + 1}: {D}")
-        print(f"  C{rodada + 1} + D{rodada + 1}: {chave_56_shifted}")
-        print(f"  K{rodada + 1}: {subchave}")
-        print(f"  K{rodada + 1} (hex): {bits_para_hex(subchave)}")
         # Formata em grupos de 6 bits
         k_formatted = ' '.join([subchave[i:i+6] for i in range(0, 48, 6)])
-        print(f"  K{rodada + 1} (formatado): {k_formatted}")
     
     return subchaves
-
-def test_xor_com_valores_slide():
-    """Testa o XOR com os valores exatos do slide"""
-    print("\n=== TESTE XOR COM VALORES DO SLIDE ===")
-    
-    # Valores exatos do slide
-    L0_slide = "10111111001000100000001000011101"
-    f_slide   = "01101111010110011110100011000100"  # Este é o valor de f do slide
-    
-    print(f"L₀ do slide: {L0_slide}")
-    print(f"f do slide:  {f_slide}")
-    
-    # Calcula o XOR
-    R1_calculado = xor(L0_slide, f_slide)
-    R1_esperado = "11010000011110111110101011011001"
-    
-    print(f"R₁ calculado: {R1_calculado}")
-    print(f"R₁ esperado: {R1_esperado}")
-    print(f"Correto? {R1_calculado == R1_esperado}")
-    
-    # Formata para visualização
-    R1_calc_fmt = ' '.join([R1_calculado[i:i+4] for i in range(0, 32, 4)])
-    R1_esp_fmt = ' '.join([R1_esperado[i:i+4] for i in range(0, 32, 4)])
-    
-    print(f"\nR₁ calculado: {R1_calc_fmt}")
-    print(f"R₁ esperado: {R1_esp_fmt}\n")
-
-# Execute este teste
-test_xor_com_valores_slide()
 
 # ---------------- Processamento de bloco ---------------- #
 
@@ -623,7 +558,6 @@ test_xor_com_valores_slide()
 contador_bloco = 0
 
 def processar_bloco_des(bloco_64bits, subchaves, modo='criptografar'):
-    """Processa um bloco de 64 bits no DES"""
     # Permutação inicial
     bloco = permutar(bloco_64bits, IP)
     
@@ -636,24 +570,7 @@ def processar_bloco_des(bloco_64bits, subchaves, modo='criptografar'):
             L_novo = R
             R_novo = xor(L, funcao_f(R, subchaves[i]))
             
-            # Debug da 1ª rodada
-            if i == 0:
-                print(f"\n=== RODADA {i+1} ===")
-                print(f"L{i}: {L}")
-                print(f"R{i}: {R}")
-                print(f"K{i+1}: {subchaves[i]}")
-                f_result = funcao_f(R, subchaves[i])
-                print(f"F(R{i}, K{i+1}): {f_result}")
-                print(f"L{i} XOR F(R{i}, K{i+1}): {R_novo}")
-                print(f"L{i+1} = R{i}: {L_novo}")
-                print(f"R{i+1} = L{i} XOR F(R{i}, K{i+1}): {R_novo}")
-            
             L, R = L_novo, R_novo
-            
-            if i == 0:
-                print(f"Estado após rodada {i+1}:")
-                print(f"L{i+1}: {L}")
-                print(f"R{i+1}: {R}")
     
     else:
         # 16 rodadas inversas para descriptografia
@@ -674,44 +591,29 @@ def des_criptografar(texto, chave):
     global contador_bloco
     contador_bloco = 0  # Reseta o contador a cada nova mensagem
     
-    print(f"\n{'='*50}")
-    print(f"INICIANDO CRIPTOGRAFIA DES")
-    print(f"{'='*50}")
-    print(f"Texto original: '{texto}'")
-    print(f"Chave fornecida: '{chave}'")
-    
-    # CORREÇÃO: Se a chave está em hexadecimal, converte para bits
+    # Se a chave está em hexadecimal, converte para bits
     if all(c in '0123456789ABCDEFabcdef' for c in chave.replace(' ', '')) and len(chave.replace(' ', '')) == 16:
-        # Chave em hexadecimal (como no slide: "01 23 45 67 89 AB CD EF")
+        # Chave em hexadecimal
         chave_hex = chave.replace(' ', '').upper()
         chave_bits = hex_para_bits(chave_hex)
-        print(f"Chave hexadecimal detectada: {chave_hex}")
     else:
         # Chave em texto (usa os primeiros 8 caracteres)
         chave_completa = chave.ljust(8, '\0')[:8]
         chave_bits = texto_para_bits(chave_completa)
-        print(f"Chave em texto: '{chave_completa}'")
-    
-    print(f"Chave em bits: {chave_bits}")
-    print(f"Tamanho chave: {len(chave_bits)} bits")
     
     # Gera subchaves
     subchaves = gerar_subchaves(chave_bits)
     
     # Adiciona padding ao texto
     texto_com_padding = adicionar_padding(texto)
-    print(f"Texto com padding: '{texto_com_padding}'")
     
     # Converte texto para bits
     texto_bits = texto_para_bits(texto_com_padding)
-    print(f"Texto em bits: {texto_bits}")
-    print(f"Tamanho texto: {len(texto_bits)} bits")
     
     # Processa em blocos de 64 bits
     texto_criptografado_bits = ''
     for i in range(0, len(texto_bits), 64):
         bloco = texto_bits[i:i+64].ljust(64, '0')
-        print(f"\n--- Processando Bloco {i//64 + 1} ---")
         bloco_criptografado = processar_bloco_des(bloco, subchaves, 'criptografar')
         texto_criptografado_bits += bloco_criptografado
     
@@ -721,23 +623,13 @@ def des_criptografar(texto, chave):
         byte = texto_criptografado_bits[i:i+8]
         texto_hex += format(int(byte, 2), '02X')
     
-    print(f"\nTexto criptografado (hex): {texto_hex}")
-    print(f"{'='*50}")
-    
     return texto_hex
 
 def des_descriptografar(texto_criptografado, chave):
-    """Descriptografa texto usando DES"""
-    print(f"\n{'='*50}")
-    print(f"INICIANDO DESCRIPTOGRAFIA DES")
-    print(f"{'='*50}")
-    print(f"Texto criptografado (hex): {texto_criptografado}")
-    print(f"Chave: '{chave}'")
     
     # Prepara a chave
     chave_completa = chave.ljust(8, '\0')[:8]
     chave_bits = texto_para_bits(chave_completa)
-    print(f"Chave em bits: {chave_bits}")
     
     # Gera subchaves
     subchaves = gerar_subchaves(chave_bits)
@@ -749,30 +641,19 @@ def des_descriptografar(texto_criptografado, chave):
         byte_bin = format(int(byte_hex, 16), '08b')
         texto_bits += byte_bin
     
-    print(f"Texto em bits: {texto_bits}")
-    print(f"Tamanho: {len(texto_bits)} bits")
-    
     # Processa em blocos de 64 bits
     texto_descriptografado_bits = ''
     for i in range(0, len(texto_bits), 64):
         if i + 64 <= len(texto_bits):
             bloco = texto_bits[i:i+64]
-            print(f"\n--- Processando Bloco {i//64 + 1} (Descriptografia) ---")
-            print(f"Bloco {i//64 + 1} (64 bits): {bloco}")
             bloco_descriptografado = processar_bloco_des(bloco, subchaves, 'descriptografar')
             texto_descriptografado_bits += bloco_descriptografado
-            print(f"Bloco {i//64 + 1} descriptografado: {bloco_descriptografado}")
     
     # Converte bits para texto
     texto_original = bits_para_texto(texto_descriptografado_bits)
     
     # Remove padding
     texto_final = remover_padding(texto_original)
-    
-    print(f"\nTexto descriptografado: '{texto_final}'")
-    print(f"{'='*50}")
-    print(f"FIM DA DESCRIPTOGRAFIA")
-    print(f"{'='*50}")
     
     return texto_final
 
