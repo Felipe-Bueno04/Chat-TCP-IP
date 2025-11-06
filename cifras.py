@@ -477,26 +477,53 @@ def left_shift(bits, n):
     return bits[n:] + bits[:n]
 
 def adicionar_padding(texto):
+    """Adiciona padding PKCS#7"""
     padding_len = 8 - (len(texto) % 8)
-    if padding_len == 8:
-        padding_len = 0  # Não adiciona padding se for múltiplo exato
+    if padding_len == 0:
+        padding_len = 8  # ← ISSO ESTÁ CORRETO
     
-    # Padding com zeros
-    padding = '\0' * padding_len  # Zeros
+    # Padding com o valor do tamanho do padding
+    padding = chr(padding_len) * padding_len
     padded_text = texto + padding
     
-    # Mostra em hexadecimal
-    hex_original = ''.join([format(ord(c), '02X') for c in texto])
-    hex_padded = ''.join([format(ord(c), '02X') for c in padded_text])
-    
+    print(f"DEBUG Padding: texto '{texto}' -> '{padded_text}' (padding: {padding_len})")
     return padded_text
 
-"""Remove padding de zeros"""
 def remover_padding(texto):
+    """Remove padding PKCS#7 de forma robusta"""
+    if len(texto) == 0:
+        return texto
     
-    # Remove zeros do final
-    texto_sem_zeros = texto.rstrip('\0')
-    return texto_sem_zeros
+    # Último byte indica quantos bytes de padding há
+    last_byte = texto[-1]
+    if isinstance(last_byte, str):
+        padding_len = ord(last_byte)
+    else:
+        padding_len = last_byte
+    
+    print(f"DEBUG Remover Padding: último byte={padding_len}, texto length={len(texto)}")
+    
+    # Verifica se o padding é válido (1-8)
+    if padding_len < 1 or padding_len > 8:
+        print(f"DEBUG: Padding inválido {padding_len}, retornando texto original")
+        return texto
+    
+    # Verifica se temos bytes suficientes
+    if len(texto) < padding_len:
+        print(f"DEBUG: Texto muito curto para padding {padding_len}")
+        return texto
+    
+    # Verifica se os últimos 'padding_len' bytes são iguais ao valor do padding
+    expected_padding = chr(padding_len) * padding_len
+    if texto[-padding_len:] == expected_padding:
+        return texto[:-padding_len]
+    else:
+        print(f"DEBUG: Padding inconsistente")
+        # Tenta remover apenas se os últimos bytes forem caracteres de controle
+        if all(ord(c) < 32 for c in texto[-padding_len:]):
+            return texto[:-padding_len]
+        else:
+            return texto
 
 # ---------------- Função F ---------------- #
 def funcao_f(R, K):
@@ -569,8 +596,9 @@ def processar_bloco_des(bloco_64bits, subchaves, modo='criptografar'):
         for i in range(16):
             L_novo = R
             R_novo = xor(L, funcao_f(R, subchaves[i]))
-            
             L, R = L_novo, R_novo
+        
+        bloco_final = L + R  # ← L e R na mesma ordem, sem trocar
     
     else:
         # 16 rodadas inversas para descriptografia
@@ -578,9 +606,8 @@ def processar_bloco_des(bloco_64bits, subchaves, modo='criptografar'):
             R_novo = L
             L_novo = xor(R, funcao_f(L, subchaves[i]))
             L, R = L_novo, R_novo
-    
-    # Combina final (R + L)
-    bloco_final = R + L
+        
+        bloco_final = L + R
     
     # Permutação final
     return permutar(bloco_final, FP)
@@ -626,10 +653,17 @@ def des_criptografar(texto, chave):
     return texto_hex
 
 def des_descriptografar(texto_criptografado, chave):
+    global contador_bloco
+    contador_bloco = 0
     
-    # Prepara a chave
-    chave_completa = chave.ljust(8, '\0')[:8]
-    chave_bits = texto_para_bits(chave_completa)
+    if all(c in '0123456789ABCDEFabcdef' for c in chave.replace(' ', '')) and len(chave.replace(' ', '')) == 16:
+        # Chave em hexadecimal
+        chave_hex = chave.replace(' ', '').upper()
+        chave_bits = hex_para_bits(chave_hex)
+    else:
+        # Chave em texto (usa os primeiros 8 caracteres)
+        chave_completa = chave.ljust(8, '\0')[:8]
+        chave_bits = texto_para_bits(chave_completa)
     
     # Gera subchaves
     subchaves = gerar_subchaves(chave_bits)
@@ -661,3 +695,27 @@ def des_descriptografar(texto_criptografado, chave):
 def des_decifrar(texto_criptografado, chave):
     """Alias para des_descriptografar - compatível com código do amigo"""
     return des_descriptografar(texto_criptografado, chave)
+
+def teste_com_padding_correto():
+    """Teste com texto que precisa de padding"""
+    print("=== TESTE COM PADDING ===")
+    
+    texto = "Atacar base norte."
+    chave = "0123456789ABCDEF"
+    
+    print(f"Texto original: '{texto}'")
+    print(f"Tamanho: {len(texto)} caracteres")
+    
+    # Mostrar o padding
+    texto_com_padding = adicionar_padding(texto)
+    print(f"Texto com padding: {[ord(c) for c in texto_com_padding]}")
+    
+    # Criptografar e descriptografar
+    cifrado = des_criptografar(texto, chave)
+    print(f"Cifrado (hex): {cifrado}")
+    
+    decifrado = des_descriptografar(cifrado, chave)
+    print(f"Decifrado: '{decifrado}'")
+    print(f"Sucesso: {decifrado == texto}")
+
+teste_com_padding_correto()

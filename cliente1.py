@@ -3,7 +3,7 @@ import threading
 import cifras
 import hashlib
 
-HOST = '192.168.137.1'  # Endereço IP do servidor
+HOST = '10.164.20.39'  # Endereço IP do servidor
 PORT = 12345  # Porta do servidor
 USER = "Maomao"  # Nome de usuário
 
